@@ -1,4 +1,6 @@
 # demo-conversion-service
+***This is a work-in-progress***
+
 Service for converting image and PDF formats into structured text
 
 More info:
