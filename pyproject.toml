@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "popocr"
+version = "0.1.0"
+description = "Convert image and PDF files into structured text using Poppler"
+authors = ["Jeremy Schaub <schaubjeremy@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+fastapi = "^0.110.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+coverage = "^7.4.4"
+pylint = "^3.1.0"
+mypy = "^1.9.0"
+black = "^24.3.0"
+flake8 = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

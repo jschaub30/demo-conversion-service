@@ -1,7 +1,10 @@
 # demo-conversion-service
 ***This is a work-in-progress***
 
-Service for converting image and PDF formats into structured text
+Convert image and PDF files into structured text using
+[Poppler Utilities](https://poppler.freedesktop.org/).
+- Python package
+- Cloud service
 
 More info:
 - [Project requirements](https://jeremyschaub.us/posts/post008-distributed/)
