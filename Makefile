@@ -21,6 +21,8 @@ down:
 
 test:
 	echo "Running unit tests"
+	-coverage run -m pytest tests/ | tee coverage.log
+	coverage report -m | tee -a coverage.log
 
 deploy:
 	echo "Cloud deploy"
