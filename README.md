@@ -41,4 +41,5 @@ Create python virtual environment. Here's how using [`pyenv`](https://github.com
 pyenv install 3.10.14
 pyenv virtualenv 3.10.14 convert
 pyenv activate convert
+pip install .
 ```
