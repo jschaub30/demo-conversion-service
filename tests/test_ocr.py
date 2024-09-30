@@ -1,5 +1,5 @@
 import pytest
-from popocr.popocr import run_command_with_timeout, SystemCallError
+from popocr.convert import run_command_with_timeout, SystemCallError
 
 def test_successful_command():
     """Test that a successful command returns the correct output."""

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document conversion demo</title>
+</head>
+<body>
+    <h1>Upload File to S3</h1>
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">Upload</button>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const filename = file.name;
+            const contentType = file.type || 'application/octet-stream';
+
+            // Call the Lambda function to get the presigned URL
+            try {
+                const lambdaResponse = await fetch('https://m2t7qwove4.execute-api.us-west-2.amazonaws.com/dev/url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: filename,
+                        content_type: contentType
+                    })
+                });
+
+                if (!lambdaResponse.ok) {
+                    throw new Error('Failed to get presigned URL');
+                }
+
+                const lambdaData = await lambdaResponse.json();
+                const presignedUrl = lambdaData.presigned_url;
+
+                // Upload the file to S3 using the presigned URL
+                const uploadResponse = await fetch(presignedUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': contentType
+                    },
+                    body: file
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Failed to upload file to S3');
+                }
+
+                alert('File uploaded successfully!');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error uploading file: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

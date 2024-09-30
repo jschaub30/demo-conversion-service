@@ -7,9 +7,9 @@ import tempfile
 from pathlib import Path
 import subprocess
 from subprocess import TimeoutExpired, CalledProcessError
-from typing import IO, Dict, Optional, Any
-import boto3
+from typing import Dict, Optional, Any
 import magic
+from .storage import download_file_from_s3, upload_file_to_s3
 
 
 class SystemCallError(Exception):
@@ -42,44 +42,10 @@ class ConversionOptions:
             raise ValueError(f"Invalid output format: {self.output_format}")
 
 
-def download_file_from_s3(bucket_name: str, object_key: str, download_dir: str) -> str:
-    """
-    Download a file from S3 and return it's local path
-
-    Args:
-        bucket_name (str): The name of the S3 bucket.
-        object_key (str): The key of the object in the S3 bucket.
-        download_dir (str): The directory where the file will be downloaded.
-
-    Returns:
-        str: The path to the downloaded or converted file.
-    """
-    # Initialize a boto3 client
-    s3 = boto3.client("s3")
-
-    # Construct the download path
-    download_path = Path(download_dir) / Path(object_key).name
-
-    # Download the file
-    s3.download_file(bucket_name, object_key, download_path.as_posix())
-    return download_path.as_posix()
-
-
-def upload_file_to_s3(file_path: str, bucket: str, object_name: str):
-    """
-    Upload a file to an S3 bucket
-
-    :param file_path: File to upload
-    :param bucket: Bucket to upload to
-    :param object_name: S3 object name
-    """
-    s3_client = boto3.client("s3")
-    s3_client.upload_file(file_path, bucket, object_name)
-
-
 def run_command_with_timeout(command, timeout):
     """
-    Runs a system command with a specified timeout. Raises SystemCallError if the command fails or returns a non-zero exit status.
+    Runs a system command with a specified timeout. Raises SystemCallError if the command
+    fails or returns a non-zero exit status.
 
     Parameters:
     - command (list): The command to execute and its arguments as a list.
@@ -147,7 +113,7 @@ def convert_image_to_pdf(
     return output_pdf_path
 
 
-def convert_pdf_to_text(
+def pdf_to_text(
     pdf_filename: str, conversion_options: ConversionOptions, timeout: int = 30
 ) -> str:
     """
@@ -179,7 +145,7 @@ def convert_pdf_to_text(
         raise SystemCallError(f"Failed to convert {pdf_filename} to text: {str(e)}")
 
 
-def convert_pdf_to_xml(
+def pdf_to_xml(
     pdf_filename: str, conversion_options: ConversionOptions, timeout: int = 30
 ) -> str:
     """
@@ -247,11 +213,11 @@ def process_file(bucket_name: str, object_key: str, config: Dict[str, Any]):
 
                 # Decide the conversion method based on the output format
                 if conversion_options.output_format == "xml":
-                    temp_output_path = convert_pdf_to_xml(
+                    temp_output_path = pdf_to_xml(
                         input_file_path, conversion_options
                     )
                 elif conversion_options.output_format == "text":
-                    temp_output_path = convert_pdf_to_text(
+                    temp_output_path = pdf_to_text(
                         input_file_path, conversion_options
                     )
 
@@ -267,3 +233,4 @@ def process_file(bucket_name: str, object_key: str, config: Dict[str, Any]):
         if temp_output_path and os.path.exists(temp_output_path):
             os.remove(temp_output_path)
         raise Exception(f"Failed to process the file: {str(e)}")
+    return output_object_name
