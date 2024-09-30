@@ -1,3 +1,4 @@
+import uuid
 import json
 import boto3
 import os
@@ -34,7 +35,8 @@ def lambda_handler(event, context):
     # print(json.dumps(event))
     # print(json.dumps(body))
 
-    filename = body["filename"]
+    job_id = str(uuid.uuid4())[:8]
+    object_key = f"input/{job_id}/{body['filename']}"
     content_type = body["content_type"]
     
     s3_client = boto3.client('s3')
@@ -45,7 +47,7 @@ def lambda_handler(event, context):
             ClientMethod='put_object',
             Params={
                 'Bucket': bucket_name,
-                'Key': filename,
+                'Key': object_key,
                 'ContentType': content_type
             },
             ExpiresIn=3600,  # URL expiration time in seconds
