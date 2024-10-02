@@ -101,7 +101,7 @@ def create_job(job_id, bucket_name, object_key, metadata=None):
             item['metadata'] = metadata  # Add optional metadata field
 
         response = TABLE.put_item(Item=item)
-        logger.info(f"Job {job_id} with status={status!r} updated successfully")
+        logger.info(f"Job {job_id} created successfully")
     except ClientError as e:
         logger.error(f"Error creating job {job_id} record: {e.response['Error']['Message']}")
 
