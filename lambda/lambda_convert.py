@@ -13,6 +13,12 @@ from pathlib import Path
 import subprocess
 from subprocess import TimeoutExpired, CalledProcessError
 from typing import Dict, Optional, Any
+from datetime import datetime
+from botocore.exceptions import ClientError
+
+dynamodb = boto3.resource('dynamodb')
+table_name = "DocumentConversionJobs"
+TABLE = dynamodb.Table(table_name)
 
 s3 = boto3.client('s3')
 
@@ -150,7 +156,7 @@ def process_file(bucket_name: str, object_key: str, config: Dict[str, Any]):
         object_key (str): The key of the object in the S3 bucket.
         config (Dict[str, Any]): Configuration options
     """
-    logging.info(f"Start processing {object_key}")
+    logger.info(f"Start processing {object_key}")
     try:
         head_response = s3.head_object(Bucket=bucket_name, Key=object_key)
         content_type = head_response['ContentType']
@@ -180,9 +186,10 @@ def process_file(bucket_name: str, object_key: str, config: Dict[str, Any]):
             # upload output files to S3
             for fmt, local_fn_pth in output.items():
                 object_key = f"{output_prefix}.{fmt}"
+                logger.info(f"Uploading {local_fn_pth!r} to s3://{bucket_name}/{object_key}")
                 s3.upload_file(local_fn_pth, bucket_name, object_key)
                 result[fmt] = object_key
-            return result
+        return result
 
     except Exception as e:
         raise Exception(f"Failed to process the file: {str(e)}")
@@ -193,10 +200,20 @@ def lambda_handler(event, context):
     # print(json.dumps(event))  # use to create test cases
     bucket_name = event['Records'][0]['s3']['bucket']['name']
     object_key = event['Records'][0]['s3']['object']['key']
+    job_id = object_key.split("input/")[1].split("/")[0]
     result = process_file(bucket_name, object_key, None)
     expiration_time_sec = 172800  # 2 days
-    output = {}
+    urls = {}
     try:
+        url = s3.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': object_key,
+            },
+            ExpiresIn=expiration_time_sec,
+        )
+        urls['input'] = url
         for ext, object_key in result.items():
             url = s3.generate_presigned_url(
                 ClientMethod='get_object',
@@ -206,10 +223,33 @@ def lambda_handler(event, context):
                 },
                 ExpiresIn=expiration_time_sec,
             )
-            output[ext] = url
+            urls[ext] = url
+        update_job(job_id, "completed", urls=urls, message=None, metadata=None)
     except Exception as e:
         return {
             'statusCode': 500,
             'body': json.dumps({'message': f'Error generating presigned URL: {str(e)}'})
         }
-    return output
+    return urls
+
+
+def update_job(job_id, status, urls=None, message=None, metadata=None):
+    try:
+        item = {
+            'job_id': job_id,
+            'created_at': datetime.utcnow().isoformat(),
+            'status': status,
+        }
+
+        if status == 'success' and urls:
+            item['urls'] = urls
+        elif message:
+            item['message'] = message
+
+        if metadata:
+            item['metadata'] = metadata
+
+        response = TABLE.put_item(Item=item)
+        logger.info(f"Job {job_id} with status={status!r} updated successfully")
+    except ClientError as e:
+        logger.error(f"Error updating job record: {e.response['Error']['Message']}")
