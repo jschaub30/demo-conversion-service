@@ -31,7 +31,7 @@ def lambda_handler(event, context):
         "Access-Control-Allow-Methods": "GET,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
     }
-    logger.debug(json.dumps(event, indent=2))
+    # logger.debug(json.dumps(event, indent=2))
     query_params = event.get('queryStringParameters')
 
     if not query_params or not query_params.get('job_id'):
@@ -46,29 +46,35 @@ def lambda_handler(event, context):
     records = query_records_by_job_id(job_id)
     
     if records:
-        completed = ""
-        status = ""
-        url = ""
-        urls = ""
+        status = None
+        started = None
+        completed = None
+        url = None
+        urls = None
+        message = None
+        
         for record in records:
             if record["status"] == "started":
-                if not status:
+                if status is None:
                     status = "started"
-                started = record["created_at"]
-                url = record['url']
+                    started = record["created_at"]
+                    url = record['url']
             elif record["status"] == "success":
-                completed = record["created_at"]
                 status = "success"
-                urls = record['urls']
-            elif record["status"] == "error":
                 completed = record["created_at"]
+                urls = record.get('urls')
+            elif record["status"] == "error":
                 status = "error"
+                completed = record["created_at"]
+                message = record.get('message', 'No error message provided')
+    
         return {
             'statusCode': 200,
             "headers": headers,
             "body": json.dumps({
                 "job_id": job_id,
                 "status": status,
+                "message": message,
                 "started": started,
                 "completed": completed,
                 "input": url,

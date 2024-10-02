@@ -93,7 +93,7 @@ def create_job(job_id, bucket_name, object_key, metadata=None):
         item = {
             'job_id': job_id,
             'created_at': datetime.utcnow().isoformat(),
-            's3_urls': [s3_url],  # Store input file URL as a list
+            'url': s3_url,
             'status': 'started',
         }
 

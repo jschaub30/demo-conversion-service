@@ -145,7 +145,7 @@ def convert_pdf_poppler(
     return output
         
 
-def process_file(bucket_name: str, object_key: str, config: Dict[str, Any]):
+def process_file(bucket_name: str, object_key: str, job_id, config: Dict[str, Any]):
     """
     Download a file from S3. 
     
@@ -165,9 +165,12 @@ def process_file(bucket_name: str, object_key: str, config: Dict[str, Any]):
         if not (
             content_type == 'application/pdf' or content_type.startswith('image')
             ):
+            message = f"File {object_key} is not an image or PDF, skipping processing."
+            update_job(job_id, "error", message=message)
+            logger.error(message)
             return {
                 'statusCode': 400,
-                'body': json.dumps(f"File {object_key} is not an image or PDF, skipping processing.")
+                'body': message
             }
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -192,7 +195,10 @@ def process_file(bucket_name: str, object_key: str, config: Dict[str, Any]):
         return result
 
     except Exception as e:
-        raise Exception(f"Failed to process the file: {str(e)}")
+        message = f"Failed to process the file: {str(e)}"
+        update_job(job_id, "error", message=message)
+        logger.error(message)
+        raise Exception(message)
     return result
 
 
@@ -201,7 +207,7 @@ def lambda_handler(event, context):
     bucket_name = event['Records'][0]['s3']['bucket']['name']
     object_key = event['Records'][0]['s3']['object']['key']
     job_id = object_key.split("input/")[1].split("/")[0]
-    result = process_file(bucket_name, object_key, None)
+    result = process_file(bucket_name, object_key, job_id, None)
     expiration_time_sec = 172800  # 2 days
     urls = {}
     try:
@@ -224,7 +230,7 @@ def lambda_handler(event, context):
                 ExpiresIn=expiration_time_sec,
             )
             urls[ext] = url
-        update_job(job_id, "completed", urls=urls, message=None, metadata=None)
+        update_job(job_id, "success", urls=urls, message=None, metadata=None)
     except Exception as e:
         return {
             'statusCode': 500,
