@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Conversion Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="about-project.html">About this project</a></li>
+                <li><a href="about-me.html">About me</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Demo Document Conversion Service</h1>
+        <h3>Extract structured text from image/PDF files</h3>
+        <div class="upload-container">
+            <input type="file" id="fileInput" />
+            <button onclick="uploadFile()">Upload</button>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+        <div id="fileLinks" class="file-links"></div>
+    </main>
+
+    <script src="upload.js" defer></script>
+</body>
+</html>

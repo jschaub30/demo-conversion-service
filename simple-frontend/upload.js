@@ -3,6 +3,7 @@ async function uploadFile() {
     const file = fileInput.files[0];
     const statusMessage = document.getElementById('statusMessage');
     const fileLinks = document.getElementById('fileLinks');
+    fileLinks.innerHTML = '';
 
     if (!file) {
         statusMessage.textContent = 'Please select a file to upload.';
